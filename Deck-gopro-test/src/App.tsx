@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
 import DeckGL from '@deck.gl/react'
-import { IconLayer } from '@deck.gl/layers'
+import { HeatmapLayer } from '@deck.gl/aggregation-layers'
 import { gps } from 'exifr'
 import * as maplibregl from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
@@ -37,54 +37,6 @@ const mapStyle = {
       source: 'openstreetmap',
     },
   ],
-}
-
-const pinColors = ['#d83232', '#2864d7', '#159447', '#d47b16', '#8b45c7', '#d13f91']
-const pinIconCache = new globalThis.Map<
-  string,
-  { url: string; width: number; height: number; anchorY: number }
->()
-
-function getPinIcon(color: string) {
-  const cachedIcon = pinIconCache.get(color)
-  if (cachedIcon) return cachedIcon
-
-  const icon = {
-    url: `data:image/svg+xml,${encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="60" viewBox="0 0 48 60">
-        <path d="M24 58S4 37.5 4 23.5C4 12.7 12.95 4 24 4s20 8.7 20 19.5C44 37.5 24 58 24 58Z" fill="${color}" stroke="#ffffff" stroke-width="3"/>
-        <circle cx="24" cy="23" r="7" fill="#ffffff"/>
-      </svg>
-    `)}`,
-    width: 48,
-    height: 60,
-    anchorY: 60,
-  }
-  pinIconCache.set(color, icon)
-  return icon
-}
-
-const imageAccept = 'image/jpeg,image/png,image/webp,image/heic,image/heif'
-
-function DirectoryInput({
-  onChange,
-  label,
-}: {
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void
-  label: string
-}) {
-  return (
-    <label className="upload-button">
-      {label}
-      <input
-        type="file"
-        accept={imageAccept}
-        multiple
-        onChange={onChange}
-        ref={(input) => input?.setAttribute('webkitdirectory', '')}
-      />
-    </label>
-  )
 }
 
 function App() {
@@ -201,14 +153,14 @@ function App() {
   }
 
   const layers = [
-    new IconLayer<ImageLocation>({
-      id: 'image-location-pins',
-      data: imageLocations,
+    new HeatmapLayer<ImageLocation>({
+      id: 'image-location-heatmap',
+      data: [imageLocation],
       getPosition: (location) => [location.longitude, location.latitude],
-      getIcon: (location) => getPinIcon(location.color),
-      getSize: 48,
-      sizeScale: 1,
-      pickable: true,
+      getWeight: () => 1,
+      radiusPixels: 60,
+      intensity: 1,
+      threshold: 0.05,
     }),
   ]
 
