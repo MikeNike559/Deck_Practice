@@ -17,6 +17,7 @@ type ImageLocation = {
   latitude: number
   fileName: string
   previewUrl: string
+  color: string
 }
 
 const mapStyle = {
@@ -39,48 +40,62 @@ const mapStyle = {
 }
 
 function App() {
-  const [imageLocation, setImageLocation] = useState<ImageLocation | null>(null)
+  const [imageLocations, setImageLocations] = useState<ImageLocation[]>([])
   const [status, setStatus] = useState('')
 
   useEffect(() => {
     return () => {
-      if (imageLocation?.previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(imageLocation.previewUrl)
-      }
+      imageLocations.forEach((location) => URL.revokeObjectURL(location.previewUrl))
     }
-  }, [imageLocation])
+  }, [imageLocations])
 
   async function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const files = Array.from(event.target.files ?? []).filter((file) =>
+      file.type.startsWith('image/'),
+    )
+    event.target.value = ''
+    if (files.length === 0) return
 
-    setStatus('Reading GPS metadata...')
+    setStatus(`Reading GPS metadata from ${files.length} image${files.length === 1 ? '' : 's'}...`)
 
-    try {
-      const coordinates = await gps(file)
-      if (
-        !coordinates ||
-        typeof coordinates.latitude !== 'number' ||
-        typeof coordinates.longitude !== 'number'
-      ) {
-        setStatus('No GPS coordinates were found in this image.')
-        return
-      }
+    const locations = await Promise.all(
+      files.map(async (file, index) => {
+        try {
+          const coordinates = await gps(file)
+          if (
+            !coordinates ||
+            typeof coordinates.latitude !== 'number' ||
+            typeof coordinates.longitude !== 'number'
+          ) {
+            return null
+          }
 
-      setImageLocation({
-        id: `${file.name}-${file.lastModified}`,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        fileName: file.name,
-        previewUrl: URL.createObjectURL(file),
-      })
-      setStatus('GPS coordinates loaded from the image.')
-    } catch {
-      setStatus('Could not read this image’s EXIF metadata.')
-    }
+          return {
+            id: `${file.name}-${file.lastModified}`,
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+            fileName: file.name,
+            previewUrl: URL.createObjectURL(file),
+            color: pinColors[index % pinColors.length],
+          }
+        } catch {
+          return null
+        }
+      }),
+    )
+
+    const validLocations = locations.filter(
+      (location): location is ImageLocation => location !== null,
+    )
+    setImageLocations(validLocations)
+    setStatus(
+      validLocations.length === 0
+        ? 'No GPS coordinates were found in the selected images.'
+        : `${validLocations.length} image${validLocations.length === 1 ? '' : 's'} mapped. ${files.length - validLocations.length} skipped without GPS data.`,
+    )
   }
 
-  if (!imageLocation) {
+  if (imageLocations.length === 0) {
     return (
       <main className="page">
         <section className="workspace" aria-labelledby="map-title">
@@ -91,21 +106,13 @@ function App() {
             </div>
 
             <div className="file-list file-list-empty">
-              <p>Choose an image to begin.</p>
+              <p>Choose an image folder to begin.</p>
               <span>
-                Select a photo with GPS metadata and we&apos;ll place it on the
-                map.
+                Every image with GPS metadata will get its own colored pin.
               </span>
             </div>
 
-            <label className="upload-button">
-              Choose image
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                onChange={handleImageChange}
-              />
-            </label>
+            <DirectoryInput onChange={handleImageChange} label="Choose image folder" />
             {status && <p className="status-message">{status}</p>}
           </aside>
 
@@ -113,13 +120,13 @@ function App() {
             <div className="map-header">
               <div>
                 <p className="eyebrow">Map view</p>
-                <h2 id="map-title">Where was this image taken?</h2>
+                <h2 id="map-title">Where were the images taken?</h2>
               </div>
             </div>
             <div className="map-wrapper map-wrapper-empty">
               <div className="empty-map-message">
                 <span aria-hidden="true">⌖</span>
-                <p>Your image location will appear here.</p>
+                <p>Your image locations will appear here.</p>
               </div>
             </div>
           </section>
@@ -128,10 +135,18 @@ function App() {
     )
   }
 
+  const center = imageLocations.reduce(
+    (sum, location) => ({
+      latitude: sum.latitude + location.latitude / imageLocations.length,
+      longitude: sum.longitude + location.longitude / imageLocations.length,
+    }),
+    { latitude: 0, longitude: 0 },
+  )
+
   const initialViewState: ViewState = {
-    longitude: imageLocation.longitude,
-    latitude: imageLocation.latitude,
-    zoom: 11,
+    longitude: center.longitude,
+    latitude: center.latitude,
+    zoom: imageLocations.length === 1 ? 11 : 5,
     pitch: 0,
     bearing: 0,
     padding: { top: 0, bottom: 0, left: 0, right: 0 },
@@ -159,32 +174,30 @@ function App() {
           </div>
 
           <div className="file-list">
-            <div className="file-item file-item-selected">
-              <img src={imageLocation.previewUrl} alt="" />
-              <div>
-                <strong>{imageLocation.fileName}</strong>
-                <p>GPS location found</p>
+            {imageLocations.map((location) => (
+              <div className="file-item" key={location.id}>
+                <img src={location.previewUrl} alt="" />
+                <div>
+                  <strong>{location.fileName}</strong>
+                  <p style={{ color: location.color }}>GPS location found</p>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
 
-          <label className="upload-button">
-            Add another image
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-              onChange={handleImageChange}
-            />
-          </label>
+          <DirectoryInput onChange={handleImageChange} label="Choose image folder" />
+          <p className="status-message">{status}</p>
         </aside>
 
         <section className="map-panel" aria-labelledby="map-title">
           <div className="map-header">
             <div>
               <p className="eyebrow">Map view</p>
-              <h2 id="map-title">Where was this image taken?</h2>
+              <h2 id="map-title">Where were the images taken?</h2>
             </div>
-            <span className="location-badge">1 image</span>
+            <span className="location-badge">
+              {imageLocations.length} image{imageLocations.length === 1 ? '' : 's'}
+            </span>
           </div>
 
           <div className="map-wrapper">
@@ -205,8 +218,7 @@ function App() {
           </div>
 
           <p className="map-caption">
-            Pin location: {imageLocation.latitude.toFixed(6)},{' '}
-            {imageLocation.longitude.toFixed(6)}
+            {imageLocations.length} colored pin{imageLocations.length === 1 ? '' : 's'} shown.
           </p>
         </section>
       </section>
