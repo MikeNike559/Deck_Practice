@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import DeckGL from '@deck.gl/react'
-import { ScatterplotLayer } from '@deck.gl/layers'
+import { HeatmapLayer } from '@deck.gl/aggregation-layers'
 import { gps } from 'exifr'
 import * as maplibregl from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
@@ -110,19 +110,14 @@ function App() {
   }
 
   const layers = [
-    new ScatterplotLayer<ImageLocation>({
-      id: 'image-location-pin',
+    new HeatmapLayer<ImageLocation>({
+      id: 'image-location-heatmap',
       data: [imageLocation],
       getPosition: (location) => [location.longitude, location.latitude],
-      getRadius: 80,
-      radiusMinPixels: 8,
-      radiusMaxPixels: 16,
-      getFillColor: [226, 54, 54, 220],
-      getLineColor: [255, 255, 255, 255],
-      getLineWidth: 2,
-      lineWidthMinPixels: 2,
-      stroked: true,
-      pickable: true,
+      getWeight: () => 1,
+      radiusPixels: 60,
+      intensity: 1,
+      threshold: 0.05,
     }),
   ]
 

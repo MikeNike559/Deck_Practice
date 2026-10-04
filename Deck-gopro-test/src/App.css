@@ -103,6 +103,10 @@
   border-radius: 12px;
 }
 
+.map-wrapper .maplibregl-canvas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1);
+}
+
 .map-caption {
   margin: 14px 0 0;
   color: #65748b;
