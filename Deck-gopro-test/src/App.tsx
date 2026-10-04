@@ -17,7 +17,6 @@ type ImageLocation = {
   latitude: number
   fileName: string
   previewUrl: string
-  color: string
 }
 
 const mapStyle = {
@@ -37,6 +36,29 @@ const mapStyle = {
       source: 'openstreetmap',
     },
   ],
+}
+
+const imageAccept = 'image/jpeg,image/png,image/webp,image/heic,image/heif'
+
+function DirectoryInput({
+  onChange,
+  label,
+}: {
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void
+  label: string
+}) {
+  return (
+    <label className="upload-button">
+      {label}
+      <input
+        type="file"
+        accept={imageAccept}
+        multiple
+        onChange={onChange}
+        ref={(input) => input?.setAttribute('webkitdirectory', '')}
+      />
+    </label>
+  )
 }
 
 function App() {
@@ -59,7 +81,7 @@ function App() {
     setStatus(`Reading GPS metadata from ${files.length} image${files.length === 1 ? '' : 's'}...`)
 
     const locations = await Promise.all(
-      files.map(async (file, index) => {
+      files.map(async (file) => {
         try {
           const coordinates = await gps(file)
           if (
@@ -76,7 +98,6 @@ function App() {
             longitude: coordinates.longitude,
             fileName: file.name,
             previewUrl: URL.createObjectURL(file),
-            color: pinColors[index % pinColors.length],
           }
         } catch {
           return null
@@ -108,7 +129,7 @@ function App() {
             <div className="file-list file-list-empty">
               <p>Choose an image folder to begin.</p>
               <span>
-                Every image with GPS metadata will get its own colored pin.
+                Every image with GPS metadata will get its own pin.
               </span>
             </div>
 
@@ -155,7 +176,7 @@ function App() {
   const layers = [
     new HeatmapLayer<ImageLocation>({
       id: 'image-location-heatmap',
-      data: [imageLocation],
+      data: imageLocations,
       getPosition: (location) => [location.longitude, location.latitude],
       getWeight: () => 1,
       radiusPixels: 60,
@@ -179,7 +200,7 @@ function App() {
                 <img src={location.previewUrl} alt="" />
                 <div>
                   <strong>{location.fileName}</strong>
-                  <p style={{ color: location.color }}>GPS location found</p>
+                  <p>GPS location found</p>
                 </div>
               </div>
             ))}
@@ -218,7 +239,7 @@ function App() {
           </div>
 
           <p className="map-caption">
-            {imageLocations.length} colored pin{imageLocations.length === 1 ? '' : 's'} shown.
+            {imageLocations.length} pin{imageLocations.length === 1 ? '' : 's'} shown.
           </p>
         </section>
       </section>
