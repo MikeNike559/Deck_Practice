@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
 import DeckGL from '@deck.gl/react'
-import { IconLayer } from '@deck.gl/layers'
+import { HeatmapLayer } from '@deck.gl/aggregation-layers'
 import { gps } from 'exifr'
 import * as maplibregl from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
@@ -36,18 +36,6 @@ const mapStyle = {
       source: 'openstreetmap',
     },
   ],
-}
-
-const pinIcon = {
-  url: `data:image/svg+xml,${encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="60" viewBox="0 0 48 60">
-      <path d="M24 58S4 37.5 4 23.5C4 12.7 12.95 4 24 4s20 8.7 20 19.5C44 37.5 24 58 24 58Z" fill="#d83232" stroke="#ffffff" stroke-width="3"/>
-      <circle cx="24" cy="23" r="7" fill="#ffffff"/>
-    </svg>
-  `)}`,
-  width: 48,
-  height: 60,
-  anchorY: 60,
 }
 
 function App() {
@@ -150,14 +138,14 @@ function App() {
   }
 
   const layers = [
-    new IconLayer<ImageLocation>({
-      id: 'image-location-pin',
+    new HeatmapLayer<ImageLocation>({
+      id: 'image-location-heatmap',
       data: [imageLocation],
       getPosition: (location) => [location.longitude, location.latitude],
-      getIcon: () => pinIcon,
-      getSize: 48,
-      sizeScale: 1,
-      pickable: true,
+      getWeight: () => 1,
+      radiusPixels: 60,
+      intensity: 1,
+      threshold: 0.05,
     }),
   ]
 
