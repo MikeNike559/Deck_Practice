@@ -64,6 +64,7 @@ function DirectoryInput({
 function App() {
   const [imageLocations, setImageLocations] = useState<ImageLocation[]>([])
   const [status, setStatus] = useState('')
+  const [isMapExpanded, setIsMapExpanded] = useState(false)
 
   useEffect(() => {
     return () => {
@@ -221,11 +222,15 @@ function App() {
             </span>
           </div>
 
-          <div className="map-wrapper">
+          <div
+            id="map-content"
+            className={`map-wrapper${isMapExpanded ? ' map-wrapper-expanded' : ''}`}
+          >
             <DeckGL
               initialViewState={initialViewState}
               controller
               layers={layers}
+              style={{ width: '100%', height: '100%' }}
               getTooltip={({ object }) =>
                 object ? { text: object.fileName } : null
               }
@@ -236,6 +241,27 @@ function App() {
                 attributionControl={{}}
               />
             </DeckGL>
+
+            <div className="map-controls" aria-label="Map display controls">
+              <button
+                className="map-toggle"
+                type="button"
+                aria-controls="map-content"
+                aria-expanded={isMapExpanded}
+                onClick={() => setIsMapExpanded(true)}
+              >
+                Expand map
+              </button>
+              <button
+                className="map-toggle"
+                type="button"
+                aria-controls="map-content"
+                aria-expanded={isMapExpanded}
+                onClick={() => setIsMapExpanded(false)}
+              >
+                Collapse map
+              </button>
+            </div>
           </div>
 
           <p className="map-caption">
