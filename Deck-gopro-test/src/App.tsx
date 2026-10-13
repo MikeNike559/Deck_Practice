@@ -64,7 +64,7 @@ function DirectoryInput({
 function App() {
   const [imageLocations, setImageLocations] = useState<ImageLocation[]>([])
   const [status, setStatus] = useState('')
-  const [isMapExpanded, setIsMapExpanded] = useState(true)
+  const [isMapExpanded, setIsMapExpanded] = useState(false)
 
   useEffect(() => {
     return () => {
@@ -220,42 +220,53 @@ function App() {
             <span className="location-badge">
               {imageLocations.length} image{imageLocations.length === 1 ? '' : 's'}
             </span>
-            <button
-              className="map-toggle"
-              type="button"
-              aria-controls="map-content"
-              aria-expanded={isMapExpanded}
-              onClick={() => setIsMapExpanded((expanded) => !expanded)}
-            >
-              {isMapExpanded ? 'Collapse map' : 'Expand map'}
-            </button>
           </div>
 
-          {isMapExpanded && (
-            <div id="map-content">
-              <div className="map-wrapper">
-                <DeckGL
-                  initialViewState={initialViewState}
-                  controller
-                  layers={layers}
-                  style={{ width: '100%', height: '100%' }}
-                  getTooltip={({ object }) =>
-                    object ? { text: object.fileName } : null
-                  }
-                >
-                  <Map
-                    mapLib={maplibregl}
-                    mapStyle={mapStyle}
-                    attributionControl={{}}
-                  />
-                </DeckGL>
-              </div>
+          <div
+            id="map-content"
+            className={`map-wrapper${isMapExpanded ? ' map-wrapper-expanded' : ''}`}
+          >
+            <DeckGL
+              initialViewState={initialViewState}
+              controller
+              layers={layers}
+              style={{ width: '100%', height: '100%' }}
+              getTooltip={({ object }) =>
+                object ? { text: object.fileName } : null
+              }
+            >
+              <Map
+                mapLib={maplibregl}
+                mapStyle={mapStyle}
+                attributionControl={{}}
+              />
+            </DeckGL>
 
-              <p className="map-caption">
-                {imageLocations.length} pin{imageLocations.length === 1 ? '' : 's'} shown.
-              </p>
+            <div className="map-controls" aria-label="Map display controls">
+              <button
+                className="map-toggle"
+                type="button"
+                aria-controls="map-content"
+                aria-expanded={isMapExpanded}
+                onClick={() => setIsMapExpanded(true)}
+              >
+                Expand map
+              </button>
+              <button
+                className="map-toggle"
+                type="button"
+                aria-controls="map-content"
+                aria-expanded={isMapExpanded}
+                onClick={() => setIsMapExpanded(false)}
+              >
+                Collapse map
+              </button>
             </div>
-          )}
+          </div>
+
+          <p className="map-caption">
+            {imageLocations.length} pin{imageLocations.length === 1 ? '' : 's'} shown.
+          </p>
         </section>
       </section>
     </main>

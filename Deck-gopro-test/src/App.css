@@ -216,6 +216,23 @@
   border-radius: 12px;
 }
 
+.map-wrapper-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  height: 100vh;
+  border-radius: 0;
+}
+
+.map-controls {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+}
+
 .map-wrapper-empty {
   display: grid;
   place-items: center;
@@ -285,5 +302,9 @@
 
   .map-wrapper {
     height: 320px;
+  }
+
+  .map-wrapper-expanded {
+    height: 100svh;
   }
 }
