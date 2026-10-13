@@ -40,24 +40,87 @@ const mapStyle = {
 
 const imageAccept = 'image/jpeg,image/png,image/webp,image/heic,image/heif'
 
-function DirectoryInput({
+function UploadOptions({
   onChange,
-  label,
 }: {
   onChange: (event: ChangeEvent<HTMLInputElement>) => void
-  label: string
 }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    setIsOpen(false)
+    onChange(event)
+  }
+
   return (
-    <label className="upload-button">
-      {label}
-      <input
-        type="file"
-        accept={imageAccept}
-        multiple
-        onChange={onChange}
-        ref={(input) => input?.setAttribute('webkitdirectory', '')}
-      />
-    </label>
+    <>
+      <button className="upload-button" type="button" onClick={() => setIsOpen(true)}>
+        Upload images or folder
+      </button>
+
+      {isOpen && (
+        <div className="upload-modal-backdrop" role="presentation">
+          <div
+            className="upload-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-modal-title"
+          >
+            <div className="upload-modal-header">
+              <div>
+                <p className="eyebrow">Add files</p>
+                <h2 id="upload-modal-title">Upload images</h2>
+              </div>
+              <button
+                className="modal-close-button"
+                type="button"
+                aria-label="Close upload options"
+                onClick={() => setIsOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="upload-modal-copy">
+              Select multiple images from your phone or choose a folder on a desktop browser.
+            </p>
+
+            <div className="upload-options">
+              <label className="upload-option">
+                <strong>Select images</strong>
+                <span>Choose multiple photos from your library or files.</span>
+                <input
+                  type="file"
+                  accept={imageAccept}
+                  multiple
+                  onChange={handleChange}
+                />
+              </label>
+
+              <label className="upload-option">
+                <strong>Select image folder</strong>
+                <span>Available on desktop browsers that support folder selection.</span>
+                <input
+                  type="file"
+                  accept={imageAccept}
+                  multiple
+                  onChange={handleChange}
+                  ref={(input) => input?.setAttribute('webkitdirectory', '')}
+                />
+              </label>
+            </div>
+
+            <button
+              className="modal-cancel-button"
+              type="button"
+              onClick={() => setIsOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -134,7 +197,7 @@ function App() {
               </span>
             </div>
 
-            <DirectoryInput onChange={handleImageChange} label="Choose image folder" />
+            <UploadOptions onChange={handleImageChange} />
             {status && <p className="status-message">{status}</p>}
           </aside>
 
@@ -207,7 +270,7 @@ function App() {
             ))}
           </div>
 
-          <DirectoryInput onChange={handleImageChange} label="Choose image folder" />
+          <UploadOptions onChange={handleImageChange} />
           <p className="status-message">{status}</p>
         </aside>
 
